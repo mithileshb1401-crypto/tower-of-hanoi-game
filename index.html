@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tower of Hanoi Game</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #141e30, #243b55);
+    color: white;
+    text-align: center;
+    min-height: 100vh;
+    padding: 25px 12px;
+}
+
+h1 {
+    color: #ffd166;
+    font-size: 36px;
+}
+
+.subtitle {
+    color: #dce6f1;
+}
+
+.panel {
+    margin: 20px auto;
+    max-width: 750px;
+    background: #ffffff15;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+select, button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    margin: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+button {
+    background: #ffd166;
+    color: #172033;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #ffb703;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    flex-wrap: wrap;
+    margin: 20px;
+}
+
+.board {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    max-width: 750px;
+    margin: 35px auto 20px;
+}
+
+.rod {
+    position: relative;
+    height: 245px;
+    flex: 1;
+    max-width: 210px;
+    border: 2px solid #ffffff40;
+    border-radius: 12px;
+    background: #ffffff12;
+    cursor: pointer;
+    padding: 0;
+}
+
+.rod.selected {
+    border: 3px solid #ffd166;
+    background: #ffd16620;
+}
+
+.peg {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 190px;
+    background: #d9a066;
+    border-radius: 8px;
+}
+
+.base {
+    position: absolute;
+    bottom: 8px;
+    left: 8%;
+    width: 84%;
+    height: 12px;
+    background: #d9a066;
+    border-radius: 5px;
+}
+
+.disks {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    z-index: 2;
+}
+
+.disk {
+    height: 29px;
+    border: 2px solid #ffffff70;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #172033;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+.rod-label {
+    position: absolute;
+    bottom: -30px;
+    width: 100%;
+    color: #ffd166;
+    font-weight: bold;
+}
+
+#message {
+    margin: 35px auto 10px;
+    font-size: 18px;
+    min-height: 28px;
+    color: #ffd166;
+}
+
+@media(max-width: 500px) {
+    .board {
+        gap: 6px;
+    }
+
+    .rod {
+        height: 220px;
+    }
+
+    .disk {
+        height: 26px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏆 TOWER OF HANOI</h1>
+<p class="subtitle">Move all the disks from Rod A to Rod C!</p>
+
+<div class="panel">
+    <label for="level">Choose number of disks: </label>
+    <select id="level">
+        <option value="3">3 Disks</option>
+        <option value="4">4 Disks</option>
+        <option value="5">5 Disks</option>
+    </select>
+    <button onclick="resetGame()">New Game</button>
+</div>
+
+<div class="stats">
+    <div>Moves: <strong id="moves">0</strong></div>
+    <div>Minimum moves: <strong id="minimum">7</strong></div>
+</div>
+
+<div class="board" id="board"></div>
+
+<p id="message">Select a rod to pick up its top disk.</p>
+
+<script>
+let towers = [];
+let selected = null;
+let moves = 0;
+let totalDisks = 3;
+
+const colors = [
+    "#ff6b6b",
+    "#ffa94d",
+    "#ffd43b",
+    "#69db7c",
+    "#74c0fc"
+];
+
+function resetGame() {
+    totalDisks = Number(document.getElementById("level").value);
+
+    towers = [
+        Array.from(
+            {length: totalDisks},
+            (_, i) => totalDisks - i
+        ),
+        [],
+        []
+    ];
+
+    selected = null;
+    moves = 0;
+
+    document.getElementById("minimum").textContent =
+        Math.pow(2, totalDisks) - 1;
+
+    document.getElementById("message").textContent =
+        "Select a rod to pick up its top disk.";
+
+    render();
+}
+
+function render() {
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+
+    towers.forEach((tower, index) => {
+        const rod = document.createElement("button");
+        rod.className = "rod";
+
+        if (selected === index) {
+            rod.classList.add("selected");
+        }
+
+        const peg = document.createElement("div");
+        peg.className = "peg";
+
+        const base = document.createElement("div");
+        base.className = "base";
+
+        const disks = document.createElement("div");
+        disks.className = "disks";
+
+        tower.forEach(size => {
+            const disk = document.createElement("div");
+            disk.className = "disk";
+            disk.style.width =
+                (30 + size * 13) + "%";
+            disk.style.background =
+                colors[size - 1];
+
+            disk.textContent = size;
+            disks.appendChild(disk);
+        });
+
+        const label = document.createElement("span");
+        label.className = "rod-label";
+        label.textContent = "Rod " + ["A", "B", "C"][index];
+
+        rod.append(peg, base, disks, label);
+        rod.addEventListener("click", () => handleRod(index));
+
+        board.appendChild(rod);
+    });
+
+    document.getElementById("moves").textContent = moves;
+}
+
+function handleRod(index) {
+    const message = document.getElementById("message");
+
+    if (selected === null) {
+        if (towers[index].length === 0) {
+            message.textContent = "This rod is empty!";
+            return;
+        }
+
+        selected = index;
+        message.textContent = "Now select a destination rod.";
+    } 
+    else if (selected === index) {
+        selected = null;
+        message.textContent = "Selection cancelled.";
+    } 
+    else {
+        const source = towers[selected];
+        const destination = towers[index];
+        const disk = source[source.length - 1];
+        const top = destination[destination.length - 1];
+
+        if (top !== undefined && disk > top) {
+            message.textContent =
+                "Invalid move! A larger disk cannot go on a smaller disk.";
+            selected = null;
+        } 
+        else {
+            source.pop();
+            destination.push(disk);
+            moves++;
+            selected = null;
+
+            if (towers[2].length === totalDisks) {
+                message.textContent =
+                    "🎉 Congratulations! You solved the puzzle in " +
+                    moves + " moves!";
+            } 
+            else {
+                message.textContent = "Great move! Keep going.";
+            }
+        }
+    }
+
+    render();
+}
+
+document.getElementById("level").addEventListener(
+    "change", resetGame
+);
+
+resetGame();
+</script>
+
+</body>
+</html>
